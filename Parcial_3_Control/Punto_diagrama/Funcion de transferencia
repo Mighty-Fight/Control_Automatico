@@ -1,0 +1,69 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import signal
+
+# Definimos las funciones de transferencia del controlador, planta y sensor
+
+# Función de transferencia del controlador
+K = 5
+numerador_controlador = [K * 1, K * 2]  # 5*(s + 2)
+denominador_controlador = [1, 0, 1]  # s^2 + 1
+
+# Función de transferencia de la planta
+numerador_planta = [1]
+denominador_planta = [1, 1.2, 1]  # s^2 + 1.2s + 1
+
+# Función de transferencia del sensor H(s)
+numerador_sensor = [1]  # H(s) = Vout/Vin, sin factores adicionales
+denominador_sensor = [1]
+
+# Multiplicamos las tres funciones de transferencia: controlador, planta y sensor
+# Controlador * Planta * Sensor
+num_total = np.polymul(numerador_controlador, numerador_planta)
+num_total = np.polymul(num_total, numerador_sensor)
+
+den_total = np.polymul(denominador_controlador, denominador_planta)
+den_total = np.polymul(den_total, denominador_sensor)
+
+# Crear la función de transferencia total
+G_total = signal.TransferFunction(num_total, den_total)
+
+# Calcular el diagrama de Bode
+w, mag, phase = signal.bode(G_total)
+
+# Calcular el margen de ganancia (GM) y la frecuencia de ganancia (WG)
+# Encontramos el índice donde la fase alcanza -180° o pasa cerca de él
+Wg_idx = np.argmin(np.abs(phase + 180))  # Encuentra el valor de fase más cercano a -180°
+GM = mag[Wg_idx]  # El margen de ganancia en dB cuando la fase es -180°
+
+# Calcular el margen de fase (PM) y la frecuencia de fase (WP)
+# El margen de fase se obtiene en la frecuencia donde la ganancia es 0 dB
+Wp_idx = np.argmin(np.abs(mag))  # Encuentra la frecuencia donde la ganancia es 0 dB
+PM = phase[Wp_idx] + 180  # El margen de fase es la fase en esa frecuencia
+
+# Frecuencias correspondientes
+Wg = w[Wg_idx]
+Wp = w[Wp_idx]
+
+# Mostrar los resultados
+print(f'Margen de Ganancia (GM) = {GM:.2f} dB')
+print(f'Margen de Fase (PM) = {PM:.2f} grados')
+print(f'Frecuencia cuando la fase es -180° (WG) = {Wg:.2f} rad/s')
+print(f'Frecuencia cuando la ganancia es 0 dB (WP) = {Wp:.2f} rad/s')
+
+# Graficar el diagrama de Bode
+plt.figure()
+plt.subplot(2, 1, 1)
+plt.semilogx(w, mag)  # Magnitud en dB
+plt.title('Diagrama de Bode de G(s)')
+plt.ylabel('Magnitud (dB)')
+plt.grid(True)
+
+plt.subplot(2, 1, 2)
+plt.semilogx(w, phase)  # Fase en grados
+plt.ylabel('Fase (grados)')
+plt.xlabel('Frecuencia (rad/s)')
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()

@@ -1,0 +1,33 @@
+import numpy as np
+import sympy as sp
+import control as ctrl
+
+# Definir la variable simbólica s
+s = sp.symbols('s')
+
+# Definir la función de transferencia usando sympy
+#G_expr = (10 * (1 + s/1) * (1 + s/80)) / (s * (1 + s/30) * (1 + s/4)**2)
+G_expr = (5*(2+s))/(s**4+((1,2*s)**3)+((2*s)**2)+((1,2*s)**1)+11)
+# G_expr = (1.5*(1+(s/10))) / (s*(1+(s/5))*(1+(s/25))**2)
+#G_expr = (5*(1+(s/20)))/(s*(s+1)*(1+(s/40))**2)
+
+# Convertir la expresión simbólica a una función de transferencia en control
+numerador, denominador = sp.fraction(sp.simplify(G_expr))
+numerador_coeffs = [float(c) for c in sp.Poly(numerador, s).all_coeffs()]
+denominador_coeffs = [float(c) for c in sp.Poly(denominador, s).all_coeffs()]
+G = ctrl.TransferFunction(numerador_coeffs, denominador_coeffs)
+
+# Calcular márgenes de ganancia y fase
+gain_margin, phase_margin, gain_cross_freq, phase_cross_freq = ctrl.margin(G)
+
+# Mostrar resultados
+print("Margen de ganancia (dB):", 20 * np.log10(gain_margin) if gain_margin != np.inf else "Infinito")
+print("Margen de fase (grados):", phase_margin)
+print("Frecuencia de cruce de ganancia (rad/s):", gain_cross_freq)
+print("Frecuencia de cruce de fase (rad/s):", phase_cross_freq)
+
+# Determinar si el sistema es estable
+if gain_margin > 0 and phase_margin > 0:
+    print("El sistema es estable.")
+else:
+    print("El sistema es inestable.")
